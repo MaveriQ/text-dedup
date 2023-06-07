@@ -17,9 +17,10 @@ from typing import List
 from typing import Literal
 from typing import Sequence
 from typing import Tuple
+from tqdm import tqdm
 
 import datasets
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 
 from text_dedup import logger
 from text_dedup.utils import add_io_args
@@ -299,22 +300,30 @@ if __name__ == "__main__":
 
     with timer("Total"):
         with timer("Loading"):
-            ds = load_dataset(
-                path=args.path,
-                name=args.name,
-                data_dir=args.data_dir,
-                data_files=args.data_files,
-                split=args.split,
-                revision=args.revision,
-                cache_dir=args.cache_dir,
-                use_auth_token=args.use_auth_token,
-            )
+            print('Loading dataset')
+            if args.use_load_from_disk:
+                ds = load_from_disk(args.path)
+                if args.num_samples is not None:
+                    assert args.num_samples <= len(ds), f"num_samples {args.num_samples} is larger than dataset size {len(ds)}"
+                    ds = ds.select(range(args.num_samples))
+            else:
+                ds = load_dataset(
+                    path=args.path,
+                    name=args.name,
+                    data_dir=args.data_dir,
+                    data_files=args.data_files,
+                    split=args.split,
+                    revision=args.revision,
+                    cache_dir=args.cache_dir,
+                    use_auth_token=args.use_auth_token,
+                )
 
         with timer("Preprocessing"):
+            print('Preprocessing')
             offsets: List[slice] = []
             start = 0
             with open(Path(args.google_repo_path) / temp_text, "wb") as f:
-                for doc in ds:
+                for doc in tqdm(ds,total=len(ds)):
                     doc_bytes = doc[args.column].encode("utf-8")
                     end = start + len(doc_bytes)
                     offsets.append(slice(start, end))
@@ -322,12 +331,14 @@ if __name__ == "__main__":
                     f.write(doc_bytes)
 
         with timer("SuffixArray"):
+            print('SuffixArray')
             __run_command(
                 f"python scripts/make_suffix_array.py {temp_text}",
                 args.google_repo_path,
             )
 
         with timer("SelfSimilar"):
+            print('SelfSimilar')
             __run_command(
                 f"cargo run self-similar --data-file {temp_text}"
                 f" --length-threshold {args.k} --cache-dir {args.cache_dir} --num-threads {os.cpu_count()}",
@@ -341,6 +352,7 @@ if __name__ == "__main__":
             )
 
         with timer("Restore"):
+            print('Restore')    
             duplicate_slices, duplicate_size = restore_and_merge(
                 offsets,
                 Path(args.google_repo_path) / temp_output,
@@ -349,6 +361,7 @@ if __name__ == "__main__":
             )
 
         with timer("Deduplicate"):
+            print('Deduplicate')
             ds = ds.map(
                 lambda content, idx: {
                     args.column: clean_up(content, duplicate_slices[idx]),
@@ -363,6 +376,7 @@ if __name__ == "__main__":
             )
 
         with timer("Saving"):
+            print('Saving')
             ds.save_to_disk(args.output)
 
     PAD = 30
