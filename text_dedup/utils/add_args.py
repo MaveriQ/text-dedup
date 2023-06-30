@@ -20,9 +20,9 @@ def add_io_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:  # 
         Parser with added arguments.
     """
     parser.add_argument("--path", type=str, help="`path` in load_dataset", required=True),
-    parser.add_argument(
-        "--use_load_from_disk", action='store_true', help="Use a dataset to be loaded from disk"
-    ),
+    # parser.add_argument(
+    #     "--use_load_from_disk", action='store_true', help="Use a dataset to be loaded from disk"
+    # ),
     parser.add_argument("--num_samples", type=int, default=None, help="Number of Samples to load. None for complete dataset"),
     parser.add_argument("--name", type=str, help="`name` in load_dataset"),
     parser.add_argument("--data_dir", type=str, help="`data_dir` in load_dataset"),

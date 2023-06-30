@@ -6,7 +6,7 @@ import argparse
 import os
 from hashlib import md5
 
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from tqdm import tqdm
 
 from text_dedup import logger
@@ -31,17 +31,24 @@ if __name__ == "__main__":  # pragma: no cover
 
     with timer("Total"):
         with timer("Loading"):
-            ds = load_dataset(
-                path=args.path,
-                name=args.name,
-                data_dir=args.data_dir,
-                data_files=args.data_files,
-                split=args.split,
-                revision=args.revision,
-                cache_dir=args.cache_dir,
-                use_auth_token=args.use_auth_token,
-            )
-
+            print('Loading dataset')
+            if args.local:
+                ds = load_from_disk(args.path)
+            else:
+                ds = load_dataset(
+                    path=args.path,
+                    name=args.name,
+                    data_dir=args.data_dir,
+                    data_files=args.data_files,
+                    split=args.split,
+                    revision=args.revision,
+                    cache_dir=args.cache_dir,
+                    use_auth_token=args.use_auth_token,
+                )
+            if args.num_samples is not None:
+                assert args.num_samples <= len(ds), f"num_samples {args.num_samples} is larger than dataset size {len(ds)}"
+                ds = ds.select(range(args.num_samples))
+                
         hash_func = {
             "md5": md5,
         }[args.hash_func]

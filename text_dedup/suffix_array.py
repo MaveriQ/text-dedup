@@ -301,11 +301,8 @@ if __name__ == "__main__":
     with timer("Total"):
         with timer("Loading"):
             print('Loading dataset')
-            if args.use_load_from_disk:
+            if args.local:
                 ds = load_from_disk(args.path)
-                if args.num_samples is not None:
-                    assert args.num_samples <= len(ds), f"num_samples {args.num_samples} is larger than dataset size {len(ds)}"
-                    ds = ds.select(range(args.num_samples))
             else:
                 ds = load_dataset(
                     path=args.path,
@@ -317,6 +314,9 @@ if __name__ == "__main__":
                     cache_dir=args.cache_dir,
                     use_auth_token=args.use_auth_token,
                 )
+            if args.num_samples is not None:
+                assert args.num_samples <= len(ds), f"num_samples {args.num_samples} is larger than dataset size {len(ds)}"
+                ds = ds.select(range(args.num_samples))
 
         with timer("Preprocessing"):
             print('Preprocessing')
