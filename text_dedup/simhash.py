@@ -346,7 +346,7 @@ if __name__ == "__main__":
     with timer("Total"):
         with timer("Loading"):
             print('Loading dataset')
-            if args.use_load_from_disk:
+            if args.local:
                 ds = load_from_disk(args.path)
             else:
                 ds = load_dataset(

@@ -58,7 +58,7 @@ if __name__ == "__main__":  # pragma: no cover
         with timer("Processing"):
             for idx in tqdm(range(0, len(ds), args.batch_size), desc="Processing..."):
                 batch = ds[idx : idx + args.batch_size]
-                for example in tqdm(batch[args.column], leave=False):
+                for example in batch[args.column]: #tqdm(batch[args.column], leave=False):
                     h = hash_func(example.encode("utf-8")).hexdigest()
                     if h in hashes:
                         flags.append(True)
